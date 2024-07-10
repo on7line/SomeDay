@@ -1,8 +1,18 @@
 #define TESLA_INIT_IMPL // If you have more than one file using the tesla header, only define this in the main one
 #include <tesla.hpp>    // The Tesla Header
+#include <string>
+#include <vector>
 
 
 class GuiTest : public tsl::Gui {
+private:
+    std::string Message = "";
+    void
+    getCurrentTime() {
+        time_t userTime, netTime;
+        Result rs = timeGetCurrentTime(TimeType_UserSystemClock, (u64*)&userTime);
+        Message = "GetTimeUser " + std::to_string(rs);
+    }
 public:
     GuiTest() { }
 
@@ -18,6 +28,29 @@ public:
 
         // Create and add a new list item to the list
         list->addItem(new tsl::elm::ListItem("Default List Item"));
+
+
+        auto* setToInternalItem = new tsl::elm::ListItem("current time");
+        setToInternalItem->setClickListener([this](u64 keys) {
+            if (keys & HidNpadButton_A) {
+                return operationBlock([&]() {
+                    getCurrentTime();
+                });
+            }
+            return false;
+        });
+        list->addItem(setToInternalItem);
+
+        list->addItem(new tsl::elm::CustomDrawer([](tsl::gfx::Renderer* renderer, s32 x, s32 y, s32 w, s32 h) {
+                          renderer->drawString("Sets the network time to the user-set time.", false, x + 20, y + 20, 15, renderer->a(tsl::style::color::ColorDescription));
+                      }),
+                      50);
+
+        list->addItem(new tsl::elm::CustomDrawerUnscissored([&message = Message](tsl::gfx::Renderer* renderer, s32 x, s32 y, s32 w, s32 h) {
+            if (!message.empty()) {
+                renderer->drawString(message.c_str(), false, x + 5, tsl::cfg::FramebufferHeight - 100, 20, renderer->a(tsl::style::color::ColorText));
+            }
+        }));
 
         // Add the list to the frame for it to be drawn
         frame->setContent(list);
